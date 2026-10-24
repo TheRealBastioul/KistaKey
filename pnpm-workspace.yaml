@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Dependencies allowed to run install scripts (pnpm blocks the rest).
+# If pnpm reports other ignored builds, review them with `pnpm approve-builds`.
+allowBuilds:
+  esbuild: true
+  prisma: true
+  "@prisma/engines": true
+  # BullMQ's optional native msgpack accelerator (prebuilt binary; falls back to JS if absent).
+  msgpackr-extract: true

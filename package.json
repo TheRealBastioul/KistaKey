@@ -1,0 +1,28 @@
+{
+  "name": "monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev dev:worker",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "services:up": "docker compose up -d",
+    "services:down": "docker compose down",
+    "db:generate": "pnpm --filter @repo/api db:generate",
+    "db:migrate": "pnpm --filter @repo/api db:migrate",
+    "db:deploy": "pnpm --filter @repo/api db:deploy",
+    "db:studio": "pnpm --filter @repo/api db:studio"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.2",
+    "turbo": "^2.11.10",
+    "typescript": "^7.0.2"
+  }
+}

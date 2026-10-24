@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Dark mode follows the `dark` class on <html> (set by theme-init.js / ThemeProvider). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens. Components use the semantic utilities (bg-surface,
+   text-fg, border-line...), never raw colors, so the theme lives here. */
+:root {
+  --bg: #f6f6f8;
+  --surface: #ffffff;
+  --fg: #18181b;
+  --muted: #6b6b76;
+  --line: #e4e4e9;
+  --accent: #4f46e5;
+  --accent-fg: #ffffff;
+  --ok: #15803d;
+  --bad: #b91c1c;
+}
+
+.dark {
+  --bg: #0c0c10;
+  --surface: #16161c;
+  --fg: #f2f2f5;
+  --muted: #9d9daa;
+  --line: #2a2a33;
+  --accent: #8b85ff;
+  --accent-fg: #0c0c10;
+  --ok: #4ade80;
+  --bad: #f87171;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-ok: var(--ok);
+  --color-bad: var(--bad);
+}
+
+body {
+  @apply bg-bg text-fg antialiased;
+}

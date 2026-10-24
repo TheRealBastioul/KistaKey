@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output / caches
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Generated code (regenerate with `pnpm db:generate`)
+**/src/generated/
+
+# Env files (commit only the .example)
+.env
+.env.*
+!.env.example
+
+# Logs / OS
+*.log
+.DS_Store
+Thumbs.db
