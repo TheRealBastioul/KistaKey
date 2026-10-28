@@ -9,17 +9,16 @@ Monorepo: `apps/{api,web,extension,mobile}`, `packages/{types,crypto}`.
 
 - I (Claude) work in a VirtualBox shared folder. **The user runs
   everything** on their Windows host: `pnpm install`, dev servers,
-  Docker, tests, builds, migrations. I write the code, give the exact
-  commands to run, and fix things from the output they paste back. I
-  don't install packages, start servers, or run tests here.
-- Exception: I can run **lint** myself. `node_modules` only has Windows
+  Docker, tests, typecheck, builds, migrations. I write the code, give
+  the exact commands, and fix things from the output they save to
+  `ref/error.md`.
+- Lint is the **only** exception. `node_modules` only has Windows
   binaries, so install a Linux Biome (same version as the root
   `package.json`) into the session scratchpad with
   `npm install --prefix <scratchpad>/biome @biomejs/biome@<version>` and run
   `<scratchpad>/biome/node_modules/.bin/biome check --config-path=<repo>/biome.json <repo>`.
-  Run it before handing over Verify steps. Lint is the **only**
-  exception: never run typecheck, tests, builds or the app here, even with
-  a scratchpad copy. Hand those commands to the user.
+  Run it before handing over Verify steps. Never run typecheck, tests,
+  builds or the app here, even with a scratchpad copy.
 - The user commits and pushes. I never commit.
 - Shared-folder writes: write files **one at a time** (parallel writes
   collide). If Write/Edit fails with `ETXTBSY`, write the file to the
@@ -27,6 +26,20 @@ Monorepo: `apps/{api,web,extension,mobile}`, `packages/{types,crypto}`.
 - Scripts must run in Windows cmd/PowerShell too: no `rm -rf`, no
   `VAR=x cmd` in package.json scripts, no bash-only syntax. Do
   cross-platform work in Node (see `apps/api/test/setup/`).
+- Windows gotchas already hit: use `127.0.0.1`, not `localhost`, for
+  Node-to-Node connections (IPv6 first); use `node --watch --import tsx`,
+  not `tsx watch` (it hangs under Turborepo).
+
+## Phase size (hard rule)
+
+**One phase = one Claude session of at most ~100k tokens.** There are no
+sub-phases or sub-sessions, only phases. Keep each phase to one layer or
+one feature slice: roughly 15–25 new or heavily edited files (e.g.
+"crypto + contract", "API for X", "web pages for X"). When planning,
+split any wider feature into several consecutive phases. If a phase
+turns out bigger than planned while building, stop at a clean point,
+save context, and split the remainder into a new phase right after it
+(renumber the later phases and update `plan/README.md`).
 
 ## Workflow
 
@@ -34,81 +47,102 @@ The user drives the work with four prompts:
 
 ### 1. "Read START.md" (plan and phase it)
 
-1. Read `START.md`, `plan/README.md`, and the docs the tasks touch.
+1. Read `START.md`, `plan/README.md`, and the phase READMEs and `ref/`
+   docs the tasks touch.
 2. Triage every task: it goes into an existing phase, a new phase, or a
    decision the user has to make. Order phases by dependency so nothing
-   has to be redone later.
-3. Create/update `plan/phase-NN-<slug>.md` files (template below), with
-   each task copied word for word under "Requested". Update the status
-   table in `plan/README.md`. Record decisions in `docs/decisions.md`.
-4. Clear `START.md` once every task is in a phase file, so it only ever
-   holds untriaged work.
+   has to be redone later. Respect the phase size rule: add new phases
+   rather than growing one past a session.
+3. Update the phase folder READMEs (`plan/phase-NN-<slug>/README.md`):
+   copy each task word for word under "Requested", then work it into the
+   detailed task list. Create a new phase folder if needed (renumber the
+   following phases). Update the status table in `plan/README.md`.
+   Record decisions in `ref/decisions.md`.
+4. Clear `START.md` once every task is in a phase README, so it only
+   ever holds untriaged work.
 5. Reply with the phase breakdown and only the questions that block it.
-   Don't ask about anything already decided in `docs/`. No code yet.
+   Don't ask about anything already decided in `ref/`. No code yet.
 
 ### 2. "Complete phase N"
 
-1. Read `plan/phase-NN-*.md`, `ARCHITECTURE.md`, and only the docs that
-   phase cites.
-2. Build every task end to end without stopping. Make reasonable calls
-   and list them in the summary. Ask only for real blockers (data loss,
+1. Read `plan/phase-NN-*/README.md` (Resume point first),
+   `ARCHITECTURE.md`, and only the `ref/` docs that README cites.
+2. First resolve the README's "Decisions at phase start" (record them in
+   `ref/decisions.md`; ask only if one is the user's call). Then build
+   every task end to end without stopping. Make reasonable calls and
+   list them in the summary. Ask only for real blockers (data loss,
    conflicting requirements).
-3. Tick each task's checkbox as it lands. Record new decisions in
-   `docs/decisions.md`.
+3. Tick each task's checkbox as it lands. Extra notes for the phase
+   (design sketches, findings) go in the same folder.
 4. Keep `ARCHITECTURE.md` in step with every new file, route, model, or
    job.
-5. Finish with a **Verify** block of commands for the user to run. Phase
-   status stays "Built, awaiting verification" until they paste
-   results. Then fix failures and mark it Done.
-6. Write the buildlog (`BUILDLOG.md` rules).
+5. Finish with a **Verify** block of commands for the user to run, and
+   write the same commands as a checkbox list in `ref/commands.md`
+   (replace the previous phase's list). Tick boxes as the user reports
+   each step passing. Status stays "Built, awaiting verification" until
+   the user says it's verified.
+6. **Errors:** the user saves output to `ref/error.md` and asks me to
+   read it. Read the whole file every time; it's overwritten between
+   runs. Before suggesting a fix, say which line shows the problem.
+7. When the user says the phase is verified: set Status to Done, move
+   the folder to `plan/completed/`, and update `plan/README.md`.
+8. Write the buildlog (`BUILDLOG.md` rules).
 
 ### 3. "Save context" (the user clears the session next)
 
-1. Update the phase file: checkboxes, plus the "Resume point" section
-   (exactly where work stopped and the next step).
+Also do this unprompted if a phase is running close to the session
+limit (then split the rest into a new phase, see Phase size).
+
+1. Update the current phase README: checkboxes, plus the "Resume point"
+   section (exactly where work stopped, the next step, and anything
+   decided that the next session must not redo).
 2. Update the status table in `plan/README.md`.
 3. Make `ARCHITECTURE.md` match the repo as it is now.
 4. Write or update this session's buildlog in `buildlogs/`.
 5. Save to memory only what the repo doesn't record (user preferences,
    corrections).
-6. Reply with one line: what to say to resume, e.g. "complete phase 2".
+6. Reply with one line: what to say to resume, e.g. "complete phase 3".
 
 ### 4. New session
 
-Read `plan/README.md`, the current phase file (its "Resume point"
-first) and `ARCHITECTURE.md`. Don't re-read every doc. Read a doc only
-when the task needs it.
+Read `plan/README.md`, the current phase README (its "Resume point"
+first) and `ARCHITECTURE.md`. Don't re-read every doc. Read a `ref/` doc
+only when the task needs it.
 
-### Phase file template
+### Phase README structure
 
-```markdown
-# Phase NN: <Title>
-Status: Not started | In progress | Built, awaiting verification | Done
-Depends on: <phases>, decisions §<n>
+Every `plan/phase-NN-<slug>/README.md` has these sections. Keep them
+detailed enough that the phase can be built from the README alone
+(copy in the tables and endpoints it needs). Decisions shared by a run of
+phases are listed in the first one; it records them in
+`ref/decisions.md`, and the later phases cite that section:
 
-## Goal
-## Requested (verbatim from START.md)
-## Tasks
-- [ ] ...
-## Done when
-## Verify (user runs)
-## Resume point
-```
+`Status` · `Depends on` · `Goal` · `Requested (verbatim from START.md)` ·
+`Scope` (in / out) · `Decisions at phase start` · `Data model` ·
+`API` · `Clients` (web / extension / mobile) · `Jobs` ·
+`Security requirements` · `Tasks` (checkboxes) · `Tests` ·
+`Done when` · `Verify (user runs)` · `OrkaVault reference` ·
+`Resume point`
+
+Sections that don't apply say "None."
 
 ## Where things are
 
-| File | What it is |
+| Path | What it is |
 |---|---|
 | `START.md` | User's untriaged tasks (plain text) |
-| `plan/README.md` | Roadmap + phase status table |
-| `plan/phase-NN-*.md` | The active phase's checklist and resume point |
+| `plan/README.md` | Phase index + status table + dependency order |
+| `plan/phase-NN-<slug>/README.md` | One phase: detailed tasks, checklist, resume point |
+| `plan/completed/` | Verified phases (moved here when done) |
 | `ARCHITECTURE.md` | Map of the code as built, with diagrams. Check it before grepping |
-| `docs/vision.md` | Product promise + security model |
-| `docs/features.md` | Full feature list |
-| `docs/decisions.md` | Decision log: append, never rewrite |
-| `docs/design.md` | Target design (key hierarchy, grants, clients) |
-| `docs/orkavault-carryover.md` | Which OrkaVault features to port and how |
-| `ref/` | Predecessor app (OrkaVault) docs, read-only reference |
+| `ref/vision.md` | Product promise + security model |
+| `ref/features.md` | Full feature list |
+| `ref/decisions.md` | Decision log: append, never rewrite (§12 maps old → new phase numbers) |
+| `ref/design.md` | Target design (key hierarchy, grants, clients) |
+| `ref/orkavault-carryover.md` | Which OrkaVault features to port and how |
+| `ref/OrkaVault-Architecture.md`, `ref/IDEA*.md` | Predecessor app map + original idea notes (read-only) |
+| `ref/commands.md` | Current phase's Verify checklist for the user |
+| `ref/error.md` | Latest error output from the user (overwritten each time) |
 | `BUILDLOG.md`, `buildlogs/` | Buildlog rules, one entry per unit of work |
 
 ## Code rules
@@ -118,10 +152,14 @@ Depends on: <phases>, decisions §<n>
   Repositories get `DbHandles` (`writer` / `reader`) and send replica-safe
   reads to `reader`.
 - **Modules** (`apps/api/src/modules/<name>/`) talk to each other only
-  through their `index.ts`.
+  through their `index.ts`. They're wired together in `src/modules.ts`.
 - **Tenant scoping:** every query on tenant-owned data spreads
   `tenantWhere(tenant)` (`db/tenant.ts`). The tenant comes from the
-  session, never from request input.
+  session (`request.auth.tenant`), never from request input.
+- **Routes are locked by default:** the auth hook enforces every gate
+  unless the route sets `config: { auth: "public" }` or
+  `config: { auth: { allow: [...] } }`. Unsafe methods need the CSRF
+  header unless `config: { csrf: false }`.
 - **Zero-knowledge:** all client crypto lives in `packages/crypto`; no
   custom primitives. The server never receives plaintext secrets or keys,
   except gated TOTP seeds and passkey keys (KMS).
@@ -138,9 +176,11 @@ Depends on: <phases>, decisions §<n>
 - **Errors:** throw the `AppError` helpers (`lib/errors.ts`). Unknown
   errors become a generic 500.
 - **Tests:** Vitest, `*.test.ts` next to the code. DB tests go in
-  `apps/api/test/integration/` against `TEST_DATABASE_URL`.
+  `apps/api/test/integration/` against `TEST_DATABASE_URL` (+
+  `TEST_REDIS_URL`).
 - **Naming:** package scope `@repo/*`; the display name comes only from
-  `APP_NAME` (`apps/web/src/config.ts`).
+  `APP_NAME` (`packages/types/src/brand.ts`, re-exported by
+  `apps/web/src/config.ts`).
 - Format with Biome, and match the surrounding code.
 
 ## Commands (user runs from the repo root)
@@ -148,7 +188,7 @@ Depends on: <phases>, decisions §<n>
 | Command | Does |
 |---|---|
 | `pnpm install` | Install everything |
-| `pnpm services:up` / `services:down` | Start/stop Postgres (5433) + Redis (6380) |
+| `pnpm services:up` / `services:down` | Start/stop Postgres (5433) + Redis (6380) + Mailpit (SMTP 1025, UI 8025) |
 | `pnpm db:migrate` | Create/apply migrations in dev |
 | `pnpm db:deploy` | Apply migrations (deploy step) |
 | `pnpm dev` | API :3000 + worker + web :5173 |

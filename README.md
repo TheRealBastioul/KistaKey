@@ -2,7 +2,7 @@
 
 A credential manager with personal and org vaults. Shared users can only
 log in through the app: revoke their access and they're locked out
-instantly, even if they wrote the password down. See `docs/vision.md`.
+instantly, even if they wrote the password down. See `ref/vision.md`.
 
 ## Prerequisites
 
@@ -37,6 +37,6 @@ Open http://localhost:5173. The footer should say "API ok".
 ## Where to look
 
 - `ARCHITECTURE.md`: map of the code
-- `plan/`: roadmap and the current phase
-- `docs/`: vision, features, decisions, target design
+- `plan/`: one folder per phase (detailed README each); finished phases in `plan/completed/`
+- `ref/`: vision, features, decisions, target design, OrkaVault reference
 - `CLAUDE.md`: working rules for Claude

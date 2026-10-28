@@ -1,185 +1,98 @@
 # Phased Plan
 
-Each phase ends with something usable and testable. Order follows
-dependencies: crypto before vault, vault before orgs, orgs before
-gated sharing. Phases 0–5 are the MVP; that's the point where the core
+Each phase ends with something usable and testable, and is **small enough
+to build in one Claude session (~100k tokens)**: roughly 15–25 new or
+heavily edited files, one layer or one feature slice. Order follows
+dependencies. Phases 1–28 are the MVP: that's the point where the core
 idea (vendor logs into Instagram via the vault and can't log in without
 it) works end to end on the web + extension.
 
 ## How this folder works
 
-- This file is the roadmap: one summary section per phase + the status
-  table below. It stays short.
-- When a phase starts, it gets its own `phase-NN-<slug>.md` with a task
-  checklist, the decisions it depends on, and a "Done when" check. Tick
-  tasks off as they land; don't delete them.
-- New asks from `../START.md` get triaged into the right phase file (or
-  a new phase) before any work starts, so nothing is built out of order.
-- Decisions made along the way go into `../docs/decisions.md`.
+- One **folder per phase**: `phase-NN-<slug>/README.md` holds the full
+  detail for that phase (goal, scope, decisions, data model, API,
+  clients, jobs, security, task checklist, tests, done-when, verify,
+  resume point). Extra notes for a phase (threat model, spike findings)
+  go in the same folder.
+- A phase that turns out too big for one session is split into two
+  phases (renumber the ones after it), never into sub-phases.
+- When the user verifies a phase, its folder moves to `completed/`.
+- New asks from `../START.md` are triaged into the right phase README
+  (or a new phase folder) before any work starts, so nothing is built
+  out of order.
+- Decisions made along the way go into `../ref/decisions.md`.
+- Phases were renumbered on 2026-10-28 (decisions §12 maps old → new).
 
 ## Status
 
-| Phase | File | Status |
+| Phase | Folder | Status |
 |---|---|---|
-| 0 Foundation | `phase-00-foundation.md` | Scaffolded, awaiting local verification |
-| 1 Accounts & crypto core | | Not started |
-| 2 Personal vault | | Not started |
-| 3 Organizations & lockboxes | | Not started |
-| 4 Browser extension | | Not started |
-| 5 Vault-gated access (MVP) | | Not started |
-| 6 Cross-org vendor sharing | | Not started |
-| 7 Mobile apps | | Not started |
-| 8 Passkeys | | Not started |
-| 9 Rotation & login adapters | | Not started |
-| 10 Paid & enterprise | | Not started |
+| 0 Foundation | `completed/phase-00-foundation/` | Done |
+| **Accounts** | | |
+| 1 Crypto core & API contract | `phase-01-crypto-core/` | Built, awaiting verification |
+| 2 Auth API | `phase-02-auth-api/` | Built, awaiting verification |
+| 3 Web auth core | `phase-03-web-auth-core/` | In progress |
+| 4 Web MFA & account recovery | `phase-04-web-mfa-recovery/` | Not started |
+| 5 Web security settings & legal | `phase-05-web-security-legal/` | Not started |
+| **Personal vault** | | |
+| 6 Vault crypto & contract | `phase-06-vault-crypto-contract/` | Not started |
+| 7 Vault API | `phase-07-vault-api/` | Not started |
+| 8 Vault web: store & browsing | `phase-08-vault-web-browse/` | Not started |
+| 9 Vault web: editor, generator & QR | `phase-09-vault-web-editor/` | Not started |
+| 10 Realtime vault sync | `phase-10-vault-realtime/` | Not started |
+| 11 Password health & generator page | `phase-11-vault-health-generator/` | Not started |
+| 12 Vault import & export | `phase-12-vault-import-export/` | Not started |
+| **Organizations & lockboxes** | | |
+| 13 Org crypto & contract | `phase-13-org-crypto-contract/` | Not started |
+| 14 Orgs & members API | `phase-14-orgs-members-api/` | Not started |
+| 15 Lockboxes, shares & org sync API | `phase-15-lockboxes-shares-api/` | Not started |
+| 16 Orgs web | `phase-16-orgs-web/` | Not started |
+| 17 Lockboxes & sharing web | `phase-17-lockboxes-sharing-web/` | Not started |
+| 18 Manage console & org audit | `phase-18-manage-console-audit/` | Not started |
+| 19 Org admin account recovery (optional) | `phase-19-org-account-recovery/` | Not started |
+| **Browser extension** | | |
+| 20 Extension foundation & device auth | `phase-20-extension-foundation/` | Not started |
+| 21 Extension autofill | `phase-21-extension-autofill/` | Not started |
+| 22 Use-only fill, QR capture & e2e | `phase-22-extension-use-only-qr/` | Not started |
+| 23 Extension biometric unlock (optional) | `phase-23-extension-biometric-unlock/` | Not started |
+| **Vault-gated access** | | |
+| 24 KMS & gated secrets | `phase-24-kms-gated-secrets/` | Not started |
+| 25 Grants & gated login | `phase-25-grants-gated-login/` | Not started |
+| 26 Access requests, approvals & notifications | `phase-26-access-requests-notifications/` | Not started |
+| 27 Chat approvals | `phase-27-chat-approvals/` | Not started |
+| 28 Threat model & security review (MVP complete) | `phase-28-security-review/` | Not started |
+| **Cross-org sharing** | | |
+| 29 Cross-org shares API | `phase-29-org-shares-api/` | Not started |
+| 30 Cross-org sharing web & vendor onboarding | `phase-30-org-shares-web-onboarding/` | Not started |
+| **Mobile** | | |
+| 31 Mobile foundation | `phase-31-mobile-foundation/` | Not started |
+| 32 Mobile vault, approvals & push | `phase-32-mobile-vault-approvals/` | Not started |
+| 33 iOS AutoFill provider | `phase-33-ios-autofill/` | Not started |
+| 34 Android autofill provider | `phase-34-android-autofill/` | Not started |
+| **Passkeys** | | |
+| 35 Passkey items & gated passkey API | `phase-35-passkey-core-gated-api/` | Not started |
+| 36 Extension passkeys | `phase-36-extension-passkeys/` | Not started |
+| 37 Mobile passkey providers | `phase-37-mobile-passkeys/` | Not started |
+| **Rotation & login adapters** | | |
+| 38 Direct-POST login spike | `phase-38-direct-post-spike/` | Not started |
+| 39 Rotation schedules & tasks | `phase-39-rotation-tasks/` | Not started |
+| 40 Assisted rotation in the extension | `phase-40-assisted-rotation/` | Not started |
+| 41 Direct-POST login adapters | `phase-41-login-adapters/` | Not started |
+| **Paid & enterprise** | | |
+| 42 Billing & entitlements | `phase-42-billing/` | Not started |
+| 43 Custom roles & teams | `phase-43-custom-roles-teams/` | Not started |
+| 44 Org content & confidentiality gate | `phase-44-org-content/` | Not started |
+| 45 SSO (SAML & OIDC) | `phase-45-sso/` | Not started |
+| 46 SCIM provisioning | `phase-46-scim/` | Not started |
+| 47 Audit retention & export | `phase-47-audit-retention/` | Not started |
 
----
+## Dependency order
 
-## Phase 0: Foundation
-
-Goal: an empty but production-shaped monorepo.
-
-- Monorepo (pnpm + Turborepo), TypeScript config, lint/format, CI.
-- `apps/api` skeleton: Fastify, config, error handling, health check,
-  structured logging, request IDs.
-- Postgres + Prisma + migrations pipeline (migrate on deploy).
-- Data-access layer pattern + tenant scoping helper (`org_id` / `user_id`).
-- Redis, job queue worker process.
-- Audit log module (partitioned table, append-only API).
-- `apps/web` skeleton with routing, theme (light/dark), layout shell.
-- `packages/types`, `packages/crypto` (empty, with test harness).
-
-Done when: CI builds every app; API + worker + web run locally against
-Postgres/Redis; one migration applies cleanly.
-
-## Phase 1: Accounts & crypto core
-
-Goal: users can sign up and sign in with zero-knowledge keys.
-
-- `packages/crypto`: Argon2id KDF, item encryption, key wrapping, with
-  known-answer tests (same output on every platform).
-- Signup: master password → keys generated client-side; server gets
-  auth hash + encrypted key material only.
-- Login, lock/unlock, session cookies + CSRF, rate limits.
-- MFA (TOTP + WebAuthn), trusted devices, device list + revoke.
-- Account recovery kit at signup.
-- Platform Terms / Privacy acceptance at signup (versioned, as in OrkaVault).
-- Audit events for auth.
-
-Done when: a user can sign up, log in on two browsers, and the DB holds
-no readable key material.
-
-## Phase 2: Personal vault
-
-Goal: a usable personal password manager.
-
-- Item types: Login, Secure Note, TOTP; custom fields; favorites.
-- Folders (personal only).
-- Client-side TOTP codes for personal items.
-- QR: upload image + camera scan (web).
-- Password generator; client-side health score + reuse detection.
-- Realtime sync across sessions (SSE + Redis pub/sub).
-- Import: CSV (+ Bitwarden / 1Password / LastPass formats), export.
-- 3-pane vault UI.
-
-Done when: create, edit, search, and sync items across two browsers; a
-code generated from an uploaded QR matches a phone authenticator.
-
-## Phase 3: Organizations & lockboxes
-
-Goal: teams can share inside an org.
-
-- Create org; free-tier limits (1 org, 10 users) enforced server-side.
-- Invite by email → accept → key handoff (auto-confirm when an admin
-  device is online; "waiting for confirmation" state).
-- Roles: Owner, Admin, Manager, Sharer, Member.
-- Lockboxes (working name): create, assign members/roles, item can be in
-  several lockboxes.
-- Permissions: **use** vs **reveal**, edit, share, manage.
-- Share items with expiry; server-gated ciphertext delivery.
-- Org sharing settings; org audit log view; Manage console (tiles + metrics).
-- Clearance levels (optional per lockbox / item).
-- Offboarding by end date (job).
-
-Done when: an admin shares a login into a lockbox with use-only access
-and the member's client never receives a "reveal" path; expiry removes
-access on schedule.
-
-## Phase 4: Browser extension
-
-Goal: autofill works on real sites.
-
-- Pairing + device key; unlock with master password / biometrics via
-  the OS where possible.
-- Personal autofill and save-new-login prompts.
-- Use-only fill: exact origin match, fill + submit, deterrents (block
-  copy/context menu, clear on type flip).
-- QR capture from the current tab when enabling 2FA on a site.
-- Audit every fill (user + device + item + origin).
-
-Done when: logging into a test site with a use-only shared item works,
-and a phishing-lookalike origin is refused.
-
-## Phase 5: Vault-gated access ← the differentiator, MVP complete
-
-Goal: a shared user can't log in without the vault.
-
-- Server-custodied TOTP seeds (KMS, per-org keys); "convert to
-  vault-gated" flow for an item (admin captures the 2FA QR).
-- Grant service: per user + device + item, use/reveal, expiry, instant
-  revoke (Redis-cached checks).
-- Request / approve workflow (90s view, 24h, ongoing, use-only), "must
-  use by" auto-expiry, notifications (in-app, email).
-- Extension: fill password → fetch one TOTP code → submit.
-- Approve / deny from Discord + Google Chat.
-- Protection label per item (Strong / Basic) + nudge to gate sensitive ones.
-- **External security review of the crypto + gated design before any
-  public launch.**
-
-Done when: a vendor logs into an Instagram test account through the
-extension; after revoke, the same vendor with the extracted password can't
-pass 2FA.
-
----
-
-## Phase 6: Cross-org vendor sharing
-
-- Share item / lockbox from org A to org B with ceiling (permission,
-  expiry, re-share flag).
-- Org B admins assign to their members, place in their lockboxes/folders.
-- Org A: revoke all at once, per-user audit of B's usage.
-- Vendor onboarding flow: invite link → signup → extension → first login
-  in as few steps as possible.
-
-## Phase 7: Mobile apps
-
-- Expo app: vault, approvals (push), org management basics, QR scanning.
-- iOS AutoFill Credential Provider extension (Swift).
-- Android Autofill Service / Credential Manager (Kotlin).
-- Gated items: native providers fetch TOTP codes from the API.
-
-## Phase 8: Passkeys
-
-- Passkey items; server-custodied private keys for gated passkeys
-  (signing happens on the server, behind grants).
-- Extension WebAuthn interception (registration + sign-in).
-- Mobile passkey provider (iOS 17+, Android 14+).
-- Personal (non-gated) passkeys stay ZK on the client.
-
-## Phase 9: Rotation & login adapters
-
-- Rotation schedules + reminders; rotate-on-revoke / on offboarding.
-- Assisted rotation in the extension (open change-password page, fill
-  old + generated new, save).
-- Direct-POST login adapters for top sites (password never in the DOM).
-- Adapter registry, versioned and updatable without an extension release.
-
-## Phase 10: Paid & enterprise
-
-- Billing: per-seat per org (Stripe), plan limits, upgrade flows.
-- Custom roles / teams.
-- Org-editable confidentiality banner / ToS / Privacy (versioned,
-  re-acceptance; OrkaVault's content system).
-- SSO (SAML / OIDC) + SCIM provisioning.
-- Audit retention settings, export, backups.
-- Later add-on: Google Workspace monitoring (OrkaVault feature set).
+```
+0 → 1–5 (accounts) → 6–12 (vault) → 13–19 (orgs) → 20–23 (extension)
+  → 24–28 (vault-gated, MVP) → 29–30 (cross-org)
+                              └→ 31–34 (mobile) → 35–37 (passkeys)
+  22 → 38 (spike, any time after 22)
+  30 → 39 → 40 → 41 (41 also needs 38)
+  18 → 42 → 43–47 (billing can start any time after 18)
+```

@@ -1,6 +1,8 @@
 import type { Job } from "bullmq";
 import type { AuditService } from "../modules/audit";
-import { JOBS } from "./queues";
+import type { AuthService } from "../modules/auth";
+import type { EmailMessage } from "../modules/email";
+import { JOBS, QUEUES, type QueueName } from "./queues";
 
 export type JobHandler = (job: Job) => Promise<unknown>;
 
@@ -10,19 +12,37 @@ export interface JobSchedule {
   /** Cron pattern, UTC. */
   cron: string;
   job: string;
+  queue: QueueName;
 }
 
 /**
  * Job name -> handler, plus the repeating schedules. Handlers call module
  * services only, like routes do. Add one row per new job.
  */
-export function createJobScheduleAndHandlers(deps: { audit: AuditService }) {
+export function createJobScheduleAndHandlers(deps: {
+  audit: AuditService;
+  auth: AuthService;
+  deliverEmail: (message: EmailMessage) => Promise<void>;
+}) {
   const handlers: Record<string, JobHandler> = {
     [JOBS.ensureAuditPartitions]: () => deps.audit.ensurePartitions(),
+    [JOBS.authCleanup]: () => deps.auth.cleanup(),
+    [JOBS.sendEmail]: (job) => deps.deliverEmail(job.data as EmailMessage),
   };
 
   const schedules: JobSchedule[] = [
-    { id: "audit-partitions-daily", cron: "0 3 * * *", job: JOBS.ensureAuditPartitions },
+    {
+      id: "audit-partitions-daily",
+      cron: "0 3 * * *",
+      job: JOBS.ensureAuditPartitions,
+      queue: QUEUES.maintenance,
+    },
+    {
+      id: "auth-cleanup-daily",
+      cron: "30 3 * * *",
+      job: JOBS.authCleanup,
+      queue: QUEUES.maintenance,
+    },
   ];
 
   return { handlers, schedules };

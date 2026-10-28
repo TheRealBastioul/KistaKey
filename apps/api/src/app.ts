@@ -1,10 +1,20 @@
 // Builds the Fastify app from injected dependencies. No env, DB or Redis
-// imports here, so tests can build the real app with fakes (test/app.test.ts).
+// imports here, so tests can build the real app with fakes (test/app.test.ts)
+// or with test connections (test/integration/).
 import { randomUUID } from "node:crypto";
+import { fastifyCookie } from "@fastify/cookie";
 import Fastify, { type FastifyBaseLogger } from "fastify";
 import { pino } from "pino";
 import { registerErrorHandling } from "./lib/errors";
+import type { AppModules } from "./modules";
+import { authRoutes } from "./modules/auth";
+import { devicesRoutes } from "./modules/devices";
 import { type HealthChecks, healthRoutes } from "./modules/health/routes";
+import { legalRoutes } from "./modules/legal";
+import { mfaRoutes } from "./modules/mfa";
+import { registerAuth } from "./plugins/auth";
+import { registerCsrf } from "./plugins/csrf";
+import { registerRateLimit } from "./plugins/rate-limit";
 
 export interface AppOptions {
   /** Omit for no logging (tests). */
@@ -12,6 +22,8 @@ export interface AppOptions {
   /** Number of trusted reverse-proxy hops; 0 = ignore X-Forwarded-For. */
   trustProxyHops?: number;
   healthChecks: HealthChecks;
+  /** Domain modules (src/modules.ts). Omit for a health-only app (unit tests). */
+  modules?: AppModules;
 }
 
 // Accept a caller's request ID only if it looks like one, so it can't be
@@ -40,10 +52,23 @@ export async function buildApp(options: AppOptions) {
 
   registerErrorHandling(app);
 
+  const modules = options.modules;
+  if (modules) {
+    // Hook order matters: cookies parsed → CSRF → session + gates.
+    await app.register(fastifyCookie);
+    await registerRateLimit(app, modules.redis);
+    registerCsrf(app, modules.config);
+    registerAuth(app, modules);
+  }
+
   await app.register(healthRoutes(options.healthChecks));
 
-  // Domain modules register their routes here as they're built
-  // (auth, vault, orgs, ...), each as its own plugin.
+  if (modules) {
+    await app.register(authRoutes(modules.auth, modules.mfa, modules.config));
+    await app.register(mfaRoutes(modules.mfa));
+    await app.register(devicesRoutes(modules.devices));
+    await app.register(legalRoutes(modules.legal));
+  }
 
   return app;
 }

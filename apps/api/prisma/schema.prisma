@@ -17,7 +17,7 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Append-only log of every security-relevant action (docs/decisions.md §10).
+/// Append-only log of every security-relevant action (ref/decisions.md §10).
 /// Range-partitioned by month on occurred_at. The partitions, the
 /// partition-maintenance functions and the append-only trigger are
 /// hand-written SQL in migration 20261023000000_init and live in the
@@ -42,4 +42,231 @@ model AuditLog {
   @@index([actorUserId, occurredAt])
   @@index([targetType, targetId])
   @@map("audit_log")
+}
+
+// --- Accounts & auth (Phase 2) -------------------------------------------
+// Zero-knowledge: no column holds the master password, authKey, encKey,
+// user key or recovery key. Key columns hold @repo/crypto blobs or public
+// keys; *_hash columns hold server-side Argon2id/SHA-256/HMAC digests.
+
+enum UserStatus {
+  active
+  deactivated
+
+  @@map("user_status")
+}
+
+enum DeviceKind {
+  web
+  extension
+  mobile
+
+  @@map("device_kind")
+}
+
+enum OneTimeTokenPurpose {
+  email_verify
+  account_recovery
+
+  @@map("one_time_token_purpose")
+}
+
+enum LegalKey {
+  terms
+  privacy
+
+  @@map("legal_key")
+}
+
+enum LegalAcceptanceVia {
+  signup
+  gate
+
+  @@map("legal_acceptance_via")
+}
+
+/// One account. Personal data elsewhere is keyed by user_id.
+model User {
+  id                     String     @id @default(uuid()) @db.Uuid
+  /// Lowercased + trimmed (EmailSchema).
+  email                  String     @unique
+  emailVerifiedAt        DateTime?  @map("email_verified_at") @db.Timestamptz(6)
+  status                 UserStatus @default(active)
+  kdfAlg                 String     @map("kdf_alg")
+  kdfMemoryKib           Int        @map("kdf_memory_kib")
+  kdfIterations          Int        @map("kdf_iterations")
+  kdfParallelism         Int        @map("kdf_parallelism")
+  /// base64url, 16 bytes.
+  kdfSalt                String     @map("kdf_salt")
+  /// Server Argon2id of the client's authKey (PHC string), never authKey itself.
+  authHash               String     @map("auth_hash")
+  encryptedUserKey       String     @map("encrypted_user_key")
+  publicKey              String     @map("public_key")
+  encryptedPrivateKey    String     @map("encrypted_private_key")
+  recoveryWrappedUserKey String     @map("recovery_wrapped_user_key")
+  /// Server Argon2id of recoveryAuthKey.
+  recoveryAuthHash       String     @map("recovery_auth_hash")
+  /// Rotated on password change / recovery; sessions with an older stamp are dead.
+  securityStamp          String     @map("security_stamp") @db.Uuid
+  createdAt              DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions            Session[]
+  devices             Device[]
+  mfaTotp             MfaTotp?
+  webauthnCredentials WebAuthnCredential[]
+  mfaRecoveryCodes    MfaRecoveryCode[]
+  oneTimeTokens       OneTimeToken[]
+  legalAcceptances    LegalAcceptance[]
+
+  @@map("users")
+}
+
+/// Web session behind the httpOnly cookie. Only the token's SHA-256 is stored.
+model Session {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  tokenHash         String    @unique @map("token_hash")
+  deviceId          String    @map("device_id") @db.Uuid
+  /// Null until the second factor is verified (or a trusted device skipped it).
+  mfaVerifiedAt     DateTime? @map("mfa_verified_at") @db.Timestamptz(6)
+  /// Security stamp of the user when the session was created.
+  securityStamp     String    @map("security_stamp") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  idleExpiresAt     DateTime  @map("idle_expires_at") @db.Timestamptz(6)
+  absoluteExpiresAt DateTime  @map("absolute_expires_at") @db.Timestamptz(6)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  ipAddress         String?   @map("ip_address") @db.Inet
+  userAgent         String?   @map("user_agent")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([absoluteExpiresAt])
+  @@map("sessions")
+}
+
+/// A browser (web: long-lived httpOnly device cookie), extension or phone.
+model Device {
+  id           String     @id @default(uuid()) @db.Uuid
+  userId       String     @map("user_id") @db.Uuid
+  kind         DeviceKind
+  name         String
+  /// SHA-256 of the device cookie.
+  tokenHash    String     @map("token_hash")
+  /// Skips the MFA prompt until then (decisions §11.14).
+  trustedUntil DateTime?  @map("trusted_until") @db.Timestamptz(6)
+  firstSeenAt  DateTime   @default(now()) @map("first_seen_at") @db.Timestamptz(6)
+  lastSeenAt   DateTime   @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  revokedAt    DateTime?  @map("revoked_at") @db.Timestamptz(6)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions Session[]
+
+  @@unique([userId, tokenHash])
+  @@map("devices")
+}
+
+/// TOTP secret, AES-256-GCM encrypted with SERVER_ENCRYPTION_KEY (the server must read it).
+model MfaTotp {
+  userId          String    @id @map("user_id") @db.Uuid
+  encryptedSecret String    @map("encrypted_secret")
+  /// Null while setup is pending (secret shown, first code not yet entered).
+  confirmedAt     DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  /// Last accepted 30 s step: a code can't be used twice.
+  lastUsedStep    Int?      @map("last_used_step")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mfa_totp")
+}
+
+/// WebAuthn authenticator registered as a second factor.
+model WebAuthnCredential {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  /// base64url credential ID from the authenticator.
+  credentialId String    @unique @map("credential_id")
+  /// COSE public key.
+  publicKey    Bytes     @map("public_key")
+  signCount    BigInt    @map("sign_count")
+  transports   String[]
+  name         String
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("webauthn_credentials")
+}
+
+/// One-time MFA recovery codes (10, shown once). HMAC-SHA256, keyed by SERVER_HMAC_KEY.
+model MfaRecoveryCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHash])
+  @@map("mfa_recovery_codes")
+}
+
+/// Single-use tokens from emails / multi-step flows. Only the SHA-256 is stored.
+model OneTimeToken {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  purpose   OneTimeTokenPurpose
+  tokenHash String              @unique @map("token_hash")
+  expiresAt DateTime            @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime?           @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+  @@map("one_time_tokens")
+}
+
+/// Immutable published versions of Terms / Privacy, seeded from
+/// src/config/legal/*.md on API start.
+model LegalDocument {
+  id                   String   @id @default(uuid()) @db.Uuid
+  key                  LegalKey
+  version              Int
+  title                String
+  /// Markdown. Rendered by the web app without raw HTML.
+  body                 String
+  bodySha256           String   @map("body_sha256")
+  /// False = minor fix: users who accepted an earlier version aren't asked again.
+  requiresReacceptance Boolean  @map("requires_reacceptance")
+  publishedAt          DateTime @map("published_at") @db.Timestamptz(6)
+
+  acceptances LegalAcceptance[]
+
+  @@unique([key, version])
+  @@map("legal_documents")
+}
+
+model LegalAcceptance {
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @map("user_id") @db.Uuid
+  documentId String             @map("document_id") @db.Uuid
+  acceptedAt DateTime           @default(now()) @map("accepted_at") @db.Timestamptz(6)
+  ipAddress  String?            @map("ip_address") @db.Inet
+  via        LegalAcceptanceVia
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document LegalDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, documentId])
+  @@map("legal_acceptances")
 }

@@ -10,6 +10,12 @@ export const ErrorCodeSchema = z.enum([
   "CONFLICT",
   "RATE_LIMITED",
   "INTERNAL",
+  // Auth gates (apps/api/src/plugins/auth.ts), in the order they're checked.
+  "MFA_REQUIRED",
+  "LEGAL_ACCEPTANCE_REQUIRED",
+  "MFA_SETUP_REQUIRED",
+  "CSRF_INVALID",
+  "EMAIL_NOT_VERIFIED",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
 

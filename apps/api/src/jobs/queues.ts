@@ -4,11 +4,14 @@ import { Queue, type QueueOptions } from "bullmq";
 // delay another (e.g. grant expiry). Add queues here as phases need them.
 export const QUEUES = {
   maintenance: "maintenance",
+  email: "email",
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 
 export const JOBS = {
   ensureAuditPartitions: "audit.ensure-partitions",
+  authCleanup: "auth.cleanup",
+  sendEmail: "email.send",
 } as const;
 
 const DEFAULT_JOB_OPTIONS: QueueOptions["defaultJobOptions"] = {

@@ -8,7 +8,7 @@ Rules:
 
 - **No custom crypto.** Compose vetted libsodium primitives only
   (Argon2id, XChaCha20-Poly1305 / AES-256-GCM, X25519 sealed boxes). See
-  `docs/design.md` → Encryption model.
+  `ref/design.md` → Encryption model.
 - **Every operation has known-answer vectors** in `test/vectors/`. A
   change that alters an output is a format change: bump
   `CRYPTO_FORMAT_VERSION` and keep the old vectors for decrypting old

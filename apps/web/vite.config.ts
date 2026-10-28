@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     port: 5173,
     // The web app calls /api/*; in dev that's proxied to the API, so the
-    // browser sees one origin (no CORS, first-party cookies in Phase 1).
+    // browser sees one origin (no CORS, first-party session cookies).
     proxy: {
       "/api": {
         // 127.0.0.1, not localhost: on Windows, Node resolves localhost to
@@ -18,6 +18,8 @@ export default defineConfig({
       },
     },
   },
+  // The crypto Web Worker (src/crypto/worker.ts) is an ES module worker.
+  worker: { format: "es" },
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
