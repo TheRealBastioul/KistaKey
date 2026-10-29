@@ -12,14 +12,17 @@ export function generateSymmetricKey(): Uint8Array {
   return lib().randombytes_buf(KEY_BYTES);
 }
 
-/** Encrypts `key` under `wrappingKey` (same blob format as encrypt()). */
-export function wrapKey(wrappingKey: Uint8Array, key: Uint8Array): string {
+/**
+ * Encrypts `key` under `wrappingKey` (same blob format as encrypt()). `aad`
+ * (optional) binds the wrapped key to a context, e.g. the item it belongs to.
+ */
+export function wrapKey(wrappingKey: Uint8Array, key: Uint8Array, aad?: Uint8Array): string {
   assertLength(key, KEY_BYTES, "key to wrap");
-  return encrypt(wrappingKey, key);
+  return encrypt(wrappingKey, key, aad);
 }
 
-export function unwrapKey(wrappingKey: Uint8Array, blob: string): Uint8Array {
-  const key = decrypt(wrappingKey, blob);
+export function unwrapKey(wrappingKey: Uint8Array, blob: string, aad?: Uint8Array): Uint8Array {
+  const key = decrypt(wrappingKey, blob, aad);
   assertLength(key, KEY_BYTES, "unwrapped key");
   return key;
 }

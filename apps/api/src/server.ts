@@ -28,6 +28,7 @@ const modules = createModules({
     hmacKey: env.SERVER_HMAC_KEY,
   }),
   email: createQueueEmailSender(emailQueue),
+  logger,
 });
 
 // Published Terms/Privacy versions; refuses to start if one was edited.
@@ -44,7 +45,9 @@ const app = await buildApp({
 });
 
 onShutdown(logger, async () => {
+  // Ends the open SSE streams (preClose) before the subscriber goes away.
   await app.close();
+  modules.realtime.close();
   await emailQueue.close();
   redis.disconnect();
   await disconnectDb();

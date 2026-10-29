@@ -12,6 +12,8 @@ import { devicesRoutes } from "./modules/devices";
 import { type HealthChecks, healthRoutes } from "./modules/health/routes";
 import { legalRoutes } from "./modules/legal";
 import { mfaRoutes } from "./modules/mfa";
+import { realtimeRoutes } from "./modules/realtime";
+import { vaultRoutes } from "./modules/vault";
 import { registerAuth } from "./plugins/auth";
 import { registerCsrf } from "./plugins/csrf";
 import { registerRateLimit } from "./plugins/rate-limit";
@@ -68,6 +70,8 @@ export async function buildApp(options: AppOptions) {
     await app.register(mfaRoutes(modules.mfa));
     await app.register(devicesRoutes(modules.devices));
     await app.register(legalRoutes(modules.legal));
+    await app.register(vaultRoutes(modules.vault));
+    await app.register(realtimeRoutes(modules.realtime));
   }
 
   return app;

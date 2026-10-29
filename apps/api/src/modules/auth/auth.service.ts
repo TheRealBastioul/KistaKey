@@ -397,7 +397,8 @@ export function createAuthService(deps: AuthDeps) {
 
     /**
      * Recovery step 2: new master password + new recovery key. Every session
-     * is revoked; MFA still applies at the next login (decisions §11.19).
+     * is revoked and every device's MFA trust dropped, so MFA applies at the
+     * next login on every browser (decisions §11.19, §14.1).
      */
     async recoverComplete(input: RecoverCompleteRequest, request: RequestMeta): Promise<void> {
       const userId = await repo.consumeToken(
@@ -419,14 +420,16 @@ export function createAuthService(deps: AuthDeps) {
         },
         stamp,
       );
-      const sessionsRevoked = await sessions.revokeAll(userTenant(user.id));
+      const tenant = userTenant(user.id);
+      const sessionsRevoked = await sessions.revokeAll(tenant);
+      const devicesUntrusted = await deps.devices.untrustAll(tenant);
 
       await audit.record({
         action: "auth.recovery_used",
         actor: { userId: user.id },
         target: { type: "user", id: user.id },
         request,
-        metadata: { sessionsRevoked },
+        metadata: { sessionsRevoked, devicesUntrusted },
       });
       await deps.email.send({
         to: user.email,

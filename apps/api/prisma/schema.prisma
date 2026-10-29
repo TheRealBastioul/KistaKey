@@ -118,6 +118,10 @@ model User {
   mfaRecoveryCodes    MfaRecoveryCode[]
   oneTimeTokens       OneTimeToken[]
   legalAcceptances    LegalAcceptance[]
+  vaultItems          VaultItem[]
+  folders             Folder[]
+  vaultState          VaultState?
+  vaultTombstones     VaultTombstone[]
 
   @@map("users")
 }
@@ -269,4 +273,101 @@ model LegalAcceptance {
 
   @@unique([userId, documentId])
   @@map("legal_acceptances")
+}
+
+// --- Personal vault (Phase 7) --------------------------------------------
+// Zero-knowledge: everything but ids, type, folder, revision and timestamps
+// is inside client-encrypted blobs (decisions §15.1). Every write bumps the
+// owner's vault_state.revision in the same transaction and stamps the rows
+// it touches with the new value; sync = "rows with revision > since".
+// Ids are client-picked UUIDs (bound into the ciphertext, decisions §15.7).
+
+enum ItemType {
+  login
+  note
+  totp
+
+  @@map("item_type")
+}
+
+enum VaultObjectKind {
+  item
+  folder
+
+  @@map("vault_object_kind")
+}
+
+/// One vault item. org_id stays null until org vaults (Phase 13+).
+model VaultItem {
+  id            String    @id @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  orgId         String?   @map("org_id") @db.Uuid
+  type          ItemType
+  /// Always a folder of the same user (checked by the service).
+  folderId      String?   @map("folder_id") @db.Uuid
+  /// Item key wrapped by the user key.
+  encryptedKey  String    @map("encrypted_key")
+  /// ItemData JSON encrypted with the item key.
+  encryptedData String    @map("encrypted_data")
+  /// Vault revision of the last change.
+  revision      Int
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  /// Set while in the trash; purged 30 days later (vault.purge-trash).
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, revision])
+  @@index([folderId])
+  @@index([deletedAt])
+  @@map("vault_items")
+}
+
+/// Single-level folder; the name is encrypted with the user key.
+model Folder {
+  id            String   @id @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  encryptedName String   @map("encrypted_name")
+  revision      Int
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items VaultItem[]
+
+  @@index([userId, revision])
+  @@map("folders")
+}
+
+/// Per-user sync counter. Its row lock serializes one user's vault writes,
+/// so revisions commit in order.
+model VaultState {
+  userId         String @id @map("user_id") @db.Uuid
+  revision       Int    @default(0)
+  /// Highest revision of a pruned tombstone: a sync from an older revision
+  /// could miss a delete, so it gets the full vault instead.
+  tombstoneFloor Int    @default(0) @map("tombstone_floor")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("vault_state")
+}
+
+/// A permanently deleted item or folder, so other devices drop it on sync.
+/// Pruned after 90 days (vault_state.tombstone_floor records how far).
+model VaultTombstone {
+  userId    String          @map("user_id") @db.Uuid
+  kind      VaultObjectKind
+  objectId  String          @map("object_id") @db.Uuid
+  revision  Int
+  deletedAt DateTime        @default(now()) @map("deleted_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, kind, objectId])
+  @@index([userId, revision])
+  @@index([deletedAt])
+  @@map("vault_tombstones")
 }

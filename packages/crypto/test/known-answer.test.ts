@@ -4,14 +4,19 @@
 // and decrypts identically. Never regenerate a vector to make a test pass.
 //
 // The vectors were generated with libsodium directly, and the Argon2id,
-// HKDF and X25519 outputs cross-checked against Node's own crypto.
+// HKDF and X25519 outputs cross-checked against Node's own crypto. Item and
+// folder blobs (Phase 6) come from libsodium directly too; the TOTP cases are
+// the RFC 6238 appendix B table (secrets base32-encoded) plus a few
+// node:crypto HMAC results for 6/7 digits and a 60 s period.
 import { beforeAll, describe, expect, it } from "vitest";
 import { fromHex, toBase64Url, toHex } from "../src/encoding";
+import { decryptFolderName, decryptItem, unwrapItemKey } from "../src/items";
 import { deriveMasterKey, deriveSubKeys } from "../src/kdf";
 import { keyPairFromPrivateKey, openSealed, unwrapKey } from "../src/keys";
 import { deriveRecoveryKeys, formatRecoveryKey, parseRecoveryKey } from "../src/recovery";
 import { ready } from "../src/sodium";
 import { decrypt, encryptWithNonce } from "../src/symmetric";
+import { type TotpAlgorithm, totpCode } from "../src/totp";
 import { CRYPTO_FORMAT_VERSION } from "../src/version";
 import vectors from "./vectors/known-answer.json";
 
@@ -93,6 +98,39 @@ const RUNNERS: Record<string, Runner> = {
 
   "encoding.base64url": async (input) => ({
     text: toBase64Url(fromHex(field(input, "bytes"))),
+  }),
+
+  "item.decrypt": async (input) => {
+    const wrappingKey = fromHex(field(input, "wrappingKey"));
+    const itemId = field(input, "itemId");
+    const item = {
+      encryptedKey: field(input, "encryptedKey"),
+      encryptedData: field(input, "encryptedData"),
+    };
+    return {
+      itemKey: toHex(unwrapItemKey(wrappingKey, itemId, item.encryptedKey)),
+      json: JSON.stringify(decryptItem(wrappingKey, itemId, item)),
+    };
+  },
+
+  "folder.decrypt_name": async (input) => ({
+    name: decryptFolderName(
+      fromHex(field(input, "wrappingKey")),
+      field(input, "folderId"),
+      field(input, "encryptedName"),
+    ),
+  }),
+
+  "totp.code": async (input) => ({
+    code: await totpCode(
+      {
+        secret: field(input, "secret"),
+        algorithm: field(input, "algorithm") as TotpAlgorithm,
+        digits: Number(field(input, "digits")),
+        period: Number(field(input, "period")),
+      },
+      Number(field(input, "time")) * 1000,
+    ),
   }),
 };
 

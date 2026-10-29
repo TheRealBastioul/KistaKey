@@ -158,6 +158,326 @@
       "operation": "encoding.base64url",
       "input": { "bytes": "000102030405060708090a" },
       "expected": { "text": "AAECAwQFBgcICQo" }
+    },
+    {
+      "name": "item.decrypt: login item, key wrapped by the user key",
+      "operation": "item.decrypt",
+      "input": {
+        "wrappingKey": "c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf",
+        "itemId": "0b6f1e9a-3c2d-4e5f-8a7b-9c0d1e2f3a4b",
+        "encryptedKey": "v1.xc20p.AAECAwQFBgcICQoLDA0ODxAREhMUFRYX.Xcuuf1zU7y7GP23COcquh5EGn_GYDEe6pDYaI3RfYUK3yWM7bs2gAatkZg1MMP9J",
+        "encryptedData": "v1.xc20p.GBkaGxwdHh8gISIjJCUmJygpKissLS4v.R2_i4y8Acgzytq6kIM-LG7HbMsgg4zZoOOMQzLtTVJJj9P_y7ksfbteJyI9AINUxUcGckAr3GtdLDk2KZLcz7vwDg98weJYngTRiLtckBNHU7EDKmiiIUK6ZOsEATD1WZBp33oadnZcpc6uQ-qHXLNZ-yUPggrtIzswPHeFw1AqPCNg8S-HHseyoY2dCV2cqbP8OSVddea3BJP43Xtkic55dvkab--mhI6AL6Yb60EDiFgq_1FBwpVTprOfLygkU1Tj8KqEklDLLeA"
+      },
+      "expected": {
+        "itemKey": "e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+        "json": "{\"name\":\"Instagram\",\"favorite\":true,\"login\":{\"username\":\"vendor@example.com\",\"password\":\"p4ss wörd ✓\",\"uris\":[{\"uri\":\"https://instagram.com\"}]},\"customFields\":[],\"passwordHistory\":[]}"
+      }
+    },
+    {
+      "name": "folder.decrypt_name: folder name under the user key",
+      "operation": "folder.decrypt_name",
+      "input": {
+        "wrappingKey": "c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf",
+        "folderId": "5d2c7a10-8e4b-4f3a-9b6c-1d0e2f3a4b5c",
+        "encryptedName": "v1.xc20p.MDEyMzQ1Njc4OTo7PD0-P0BBQkNERUZH.vEkXy5PtUFc8gVaxoFsU9hvhGIk3nk1RtZn3Lho"
+      },
+      "expected": {
+        "name": "Social média"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA1 T=59",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+        "algorithm": "SHA1",
+        "digits": "8",
+        "period": "30",
+        "time": "59"
+      },
+      "expected": {
+        "code": "94287082"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA1 T=1111111109",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+        "algorithm": "SHA1",
+        "digits": "8",
+        "period": "30",
+        "time": "1111111109"
+      },
+      "expected": {
+        "code": "07081804"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA1 T=1111111111",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+        "algorithm": "SHA1",
+        "digits": "8",
+        "period": "30",
+        "time": "1111111111"
+      },
+      "expected": {
+        "code": "14050471"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA1 T=1234567890",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+        "algorithm": "SHA1",
+        "digits": "8",
+        "period": "30",
+        "time": "1234567890"
+      },
+      "expected": {
+        "code": "89005924"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA1 T=2000000000",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+        "algorithm": "SHA1",
+        "digits": "8",
+        "period": "30",
+        "time": "2000000000"
+      },
+      "expected": {
+        "code": "69279037"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA1 T=20000000000",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+        "algorithm": "SHA1",
+        "digits": "8",
+        "period": "30",
+        "time": "20000000000"
+      },
+      "expected": {
+        "code": "65353130"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA256 T=59",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA",
+        "algorithm": "SHA256",
+        "digits": "8",
+        "period": "30",
+        "time": "59"
+      },
+      "expected": {
+        "code": "46119246"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA256 T=1111111109",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA",
+        "algorithm": "SHA256",
+        "digits": "8",
+        "period": "30",
+        "time": "1111111109"
+      },
+      "expected": {
+        "code": "68084774"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA256 T=1111111111",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA",
+        "algorithm": "SHA256",
+        "digits": "8",
+        "period": "30",
+        "time": "1111111111"
+      },
+      "expected": {
+        "code": "67062674"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA256 T=1234567890",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA",
+        "algorithm": "SHA256",
+        "digits": "8",
+        "period": "30",
+        "time": "1234567890"
+      },
+      "expected": {
+        "code": "91819424"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA256 T=2000000000",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA",
+        "algorithm": "SHA256",
+        "digits": "8",
+        "period": "30",
+        "time": "2000000000"
+      },
+      "expected": {
+        "code": "90698825"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA256 T=20000000000",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA",
+        "algorithm": "SHA256",
+        "digits": "8",
+        "period": "30",
+        "time": "20000000000"
+      },
+      "expected": {
+        "code": "77737706"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA512 T=59",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA",
+        "algorithm": "SHA512",
+        "digits": "8",
+        "period": "30",
+        "time": "59"
+      },
+      "expected": {
+        "code": "90693936"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA512 T=1111111109",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA",
+        "algorithm": "SHA512",
+        "digits": "8",
+        "period": "30",
+        "time": "1111111109"
+      },
+      "expected": {
+        "code": "25091201"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA512 T=1111111111",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA",
+        "algorithm": "SHA512",
+        "digits": "8",
+        "period": "30",
+        "time": "1111111111"
+      },
+      "expected": {
+        "code": "99943326"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA512 T=1234567890",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA",
+        "algorithm": "SHA512",
+        "digits": "8",
+        "period": "30",
+        "time": "1234567890"
+      },
+      "expected": {
+        "code": "93441116"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA512 T=2000000000",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA",
+        "algorithm": "SHA512",
+        "digits": "8",
+        "period": "30",
+        "time": "2000000000"
+      },
+      "expected": {
+        "code": "38618901"
+      }
+    },
+    {
+      "name": "totp.code: RFC 6238 SHA512 T=20000000000",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA",
+        "algorithm": "SHA512",
+        "digits": "8",
+        "period": "30",
+        "time": "20000000000"
+      },
+      "expected": {
+        "code": "47863826"
+      }
+    },
+    {
+      "name": "totp.code: default shape (6 digits, 30 s)",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+        "algorithm": "SHA1",
+        "digits": "6",
+        "period": "30",
+        "time": "1111111109"
+      },
+      "expected": {
+        "code": "081804"
+      }
+    },
+    {
+      "name": "totp.code: 7 digits",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+        "algorithm": "SHA1",
+        "digits": "7",
+        "period": "30",
+        "time": "1234567890"
+      },
+      "expected": {
+        "code": "9005924"
+      }
+    },
+    {
+      "name": "totp.code: 60 s period",
+      "operation": "totp.code",
+      "input": {
+        "secret": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZA",
+        "algorithm": "SHA256",
+        "digits": "6",
+        "period": "60",
+        "time": "1234567890"
+      },
+      "expected": {
+        "code": "450756"
+      }
     }
   ]
 }

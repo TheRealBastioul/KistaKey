@@ -5,6 +5,8 @@
 import { type ErrorCode, ErrorResponseSchema } from "@repo/types";
 
 const BASE = "/api";
+/** Full URL of an API path, for callers that can't use request() (EventSource). */
+export const apiUrl = (path: string) => `${BASE}${path}`;
 const SAFE_METHODS = new Set(["GET", "HEAD"]);
 
 export class ApiError extends Error {
@@ -47,7 +49,7 @@ export interface RequestOptions<T> {
 }
 
 export async function request<T = unknown>(
-  method: "GET" | "POST" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   options: RequestOptions<T> = {},
   retried = false,

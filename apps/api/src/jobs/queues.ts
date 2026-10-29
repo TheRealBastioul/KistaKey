@@ -12,6 +12,7 @@ export const JOBS = {
   ensureAuditPartitions: "audit.ensure-partitions",
   authCleanup: "auth.cleanup",
   sendEmail: "email.send",
+  purgeTrash: "vault.purge-trash",
 } as const;
 
 const DEFAULT_JOB_OPTIONS: QueueOptions["defaultJobOptions"] = {

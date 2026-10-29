@@ -145,6 +145,25 @@ export function createSessionsService(repo: SessionsRepository, redis: Redis) {
       };
     },
 
+    /**
+     * Is the session still live? Like validate() but by token hash and
+     * without sliding the idle deadline, so a long-lived stream re-checking
+     * it doesn't keep an idle session alive. Returns its current security
+     * stamp, or null.
+     */
+    async peek(tokenHash: string): Promise<{ securityStamp: string } | null> {
+      const now = Date.now();
+      const [cached, revoked] = await redis.mget(cacheKey(tokenHash), revokedKey(tokenHash));
+      if (revoked) return null;
+      if (cached) {
+        const entry = JSON.parse(cached) as CachedSession;
+        if (now >= entry.idleExpiresAt || now >= entry.absoluteExpiresAt) return null;
+        return { securityStamp: entry.securityStamp };
+      }
+      const row = await repo.findLiveByTokenHash(tokenHash, new Date(now));
+      return row ? { securityStamp: row.securityStamp } : null;
+    },
+
     /** Second factor passed (or setup completed) for this session. */
     async markMfaVerified(tenant: UserTenant, session: SessionContext): Promise<void> {
       await repo.markMfaVerified(tenant, session.id, new Date());

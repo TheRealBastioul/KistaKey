@@ -28,7 +28,9 @@ Monorepo: `apps/{api,web,extension,mobile}`, `packages/{types,crypto}`.
   cross-platform work in Node (see `apps/api/test/setup/`).
 - Windows gotchas already hit: use `127.0.0.1`, not `localhost`, for
   Node-to-Node connections (IPv6 first); use `node --watch --import tsx`,
-  not `tsx watch` (it hangs under Turborepo).
+  not `tsx watch` (it hangs under Turborepo); never put two files in one
+  folder whose names differ only by case (`markdown.ts` + `Markdown.tsx`:
+  Windows resolved `./Markdown` to the `.ts` file).
 
 ## Phase size (hard rule)
 

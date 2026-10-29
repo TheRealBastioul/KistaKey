@@ -356,6 +356,45 @@ describe.skipIf(!canRun)("auth (integration)", () => {
   );
 
   it(
+    "recovery drops MFA trust, so a trusted browser is challenged again",
+    async () => {
+      const { account, recoveryCodes } = await readyAccount(h, "recovertrust");
+      const browser = new Client(h.app);
+      await login(browser, account.email, account.password);
+      await browser.request("POST", "/auth/mfa/totp", {
+        method: "recovery_code",
+        code: recoveryCodes[0] ?? "",
+        trustDevice: true,
+      });
+      await browser.request("POST", "/auth/logout");
+
+      const start = await crypto.startRecovery(account.created.recoveryKey);
+      const started = (
+        await browser.request("POST", "/auth/recover/start", {
+          email: account.email,
+          recoveryAuthKey: start.recoveryAuthKey,
+        })
+      ).json<{ recoveryToken: string; recoveryWrappedUserKey: string }>();
+      const done = await crypto.completeRecovery(
+        start.wrapKey,
+        started.recoveryWrappedUserKey,
+        "recovered password",
+        FAST_KDF,
+      );
+      const complete = await browser.request("POST", "/auth/recover/complete", {
+        recoveryToken: started.recoveryToken,
+        ...done.material,
+      });
+      expect(complete.statusCode).toBe(200);
+
+      // Same browser (device cookie kept), which was trusted before.
+      const after = await login(browser, account.email, "recovered password");
+      expect(after.res.json<SessionResponse>().step).toBe("mfa");
+    },
+    SLOW,
+  );
+
+  it(
     "the users row holds no readable key material",
     async () => {
       const client = new Client(h.app);

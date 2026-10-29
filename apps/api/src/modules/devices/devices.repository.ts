@@ -30,6 +30,15 @@ export function createDevicesRepository({ writer, reader }: DbHandles) {
       });
     },
 
+    /** Drops trust on every device of the tenant. Returns how many rows changed. */
+    async clearAllTrust(tenant: UserTenant): Promise<number> {
+      const { count } = await writer.device.updateMany({
+        where: { ...tenantWhere(tenant), trustedUntil: { not: null } },
+        data: { trustedUntil: null },
+      });
+      return count;
+    },
+
     listActive(tenant: UserTenant) {
       return reader.device.findMany({
         where: { ...tenantWhere(tenant), revokedAt: null },

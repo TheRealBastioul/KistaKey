@@ -17,6 +17,17 @@ Rules:
   bytes out.
 - Every encrypted blob carries `CRYPTO_FORMAT_VERSION`.
 
+Phase 6 notes: TOTP and the generator use WebCrypto (`crypto.subtle`
+HMAC, `crypto.getRandomValues`) and don't need `ready()`. Item, folder and
+TOTP vectors were generated outside this package (libsodium directly,
+`node:crypto` HMAC, RFC 6238 table).
+
+Phase 9 notes: `@repo/crypto/generator`, `@repo/crypto/otpauth` and
+`@repo/crypto/totp` are subpath exports that never load libsodium, so a
+UI thread can import them directly (the web app keeps everything else in
+its crypto worker). Keep those files, and what they import, free of
+`./sodium` imports.
+
 Phase 1 notes: the standard `libsodium-wrappers` build has no Argon2id,
 so use `libsodium-wrappers-sumo`. React Native needs a native binding
 (e.g. `react-native-libsodium`) behind the same interface.

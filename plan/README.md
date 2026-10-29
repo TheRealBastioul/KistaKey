@@ -29,19 +29,19 @@ it) works end to end on the web + extension.
 |---|---|---|
 | 0 Foundation | `completed/phase-00-foundation/` | Done |
 | **Accounts** | | |
-| 1 Crypto core & API contract | `phase-01-crypto-core/` | Built, awaiting verification |
-| 2 Auth API | `phase-02-auth-api/` | Built, awaiting verification |
-| 3 Web auth core | `phase-03-web-auth-core/` | In progress |
-| 4 Web MFA & account recovery | `phase-04-web-mfa-recovery/` | Not started |
-| 5 Web security settings & legal | `phase-05-web-security-legal/` | Not started |
+| 1 Crypto core & API contract | `completed/phase-01-crypto-core/` | Done |
+| 2 Auth API | `completed/phase-02-auth-api/` | Done |
+| 3 Web auth core | `completed/phase-03-web-auth-core/` | Done |
+| 4 Web MFA & account recovery | `completed/phase-04-web-mfa-recovery/` | Done |
+| 5 Web security settings & legal | `completed/phase-05-web-security-legal/` | Done |
 | **Personal vault** | | |
-| 6 Vault crypto & contract | `phase-06-vault-crypto-contract/` | Not started |
-| 7 Vault API | `phase-07-vault-api/` | Not started |
-| 8 Vault web: store & browsing | `phase-08-vault-web-browse/` | Not started |
-| 9 Vault web: editor, generator & QR | `phase-09-vault-web-editor/` | Not started |
-| 10 Realtime vault sync | `phase-10-vault-realtime/` | Not started |
-| 11 Password health & generator page | `phase-11-vault-health-generator/` | Not started |
-| 12 Vault import & export | `phase-12-vault-import-export/` | Not started |
+| 6 Vault crypto & contract | `completed/phase-06-vault-crypto-contract/` | Done |
+| 7 Vault API | `completed/phase-07-vault-api/` | Done |
+| 8 Vault web: store & browsing | `completed/phase-08-vault-web-browse/` | Done |
+| 9 Vault web: editor, generator & QR | `completed/phase-09-vault-web-editor/` | Done |
+| 10 Realtime vault sync | `completed/phase-10-vault-realtime/` | Done |
+| 11 Password health & generator page | `completed/phase-11-vault-health-generator/` | Done |
+| 12 Vault import & export | `completed/phase-12-vault-import-export/` | Done |
 | **Organizations & lockboxes** | | |
 | 13 Org crypto & contract | `phase-13-org-crypto-contract/` | Not started |
 | 14 Orgs & members API | `phase-14-orgs-members-api/` | Not started |

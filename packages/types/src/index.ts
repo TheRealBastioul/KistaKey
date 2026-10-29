@@ -10,3 +10,4 @@ export * from "./errors";
 export * from "./health";
 export * from "./legal";
 export * from "./mfa";
+export * from "./vault";

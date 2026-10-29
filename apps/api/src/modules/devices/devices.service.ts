@@ -66,6 +66,11 @@ export function createDevicesService(
       });
     },
 
+    /** Account recovery: no browser keeps skipping MFA (decisions §14.1). Returns devices changed. */
+    untrustAll(tenant: UserTenant): Promise<number> {
+      return repo.clearAllTrust(tenant);
+    },
+
     async list(tenant: UserTenant, currentDeviceId: string): Promise<Device[]> {
       const rows = await repo.listActive(tenant);
       return rows.map((d) => ({

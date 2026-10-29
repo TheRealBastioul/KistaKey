@@ -2,9 +2,11 @@ import { NavLink, Outlet } from "react-router";
 import { ApiStatus } from "../components/ApiStatus";
 import { APP_NAME } from "../config";
 import { ThemeToggle } from "../theme/ThemeToggle";
+import { UserMenu } from "./UserMenu";
 
 const NAV = [
   { to: "/vault", label: "Vault" },
+  { to: "/generator", label: "Generator" },
   { to: "/orgs", label: "Organizations" },
   { to: "/settings", label: "Settings" },
 ];
@@ -15,7 +17,10 @@ export function AppShell() {
     <div className="flex min-h-dvh flex-col">
       <header className="flex items-center justify-between border-b border-line bg-surface px-4 py-3">
         <span className="font-semibold">{APP_NAME}</span>
-        <ThemeToggle />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <UserMenu />
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col md:flex-row">

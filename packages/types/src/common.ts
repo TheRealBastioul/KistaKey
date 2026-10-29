@@ -12,6 +12,9 @@ export const Key32Schema = z.string().regex(/^[A-Za-z0-9_-]{43}$/, "expected a 3
 /** A 16-byte salt, base64url (22 chars). */
 export const Salt16Schema = z.string().regex(/^[A-Za-z0-9_-]{22}$/, "expected a 16-byte salt");
 
+/** v<version>.<alg>.<base64url parts...> */
+export const ENCRYPTED_BLOB_PATTERN = /^v\d+\.[a-z0-9]+(\.[A-Za-z0-9_-]+)+$/;
+
 /**
  * Client-encrypted blob from @repo/crypto: v<version>.<alg>.<parts...>.
  * The server stores it as-is and never parses the contents.
@@ -19,7 +22,7 @@ export const Salt16Schema = z.string().regex(/^[A-Za-z0-9_-]{22}$/, "expected a 
 export const EncryptedBlobSchema = z
   .string()
   .max(16_384)
-  .regex(/^v\d+\.[a-z0-9]+(\.[A-Za-z0-9_-]+)+$/, "expected an encrypted blob");
+  .regex(ENCRYPTED_BLOB_PATTERN, "expected an encrypted blob");
 
 /** Opaque random token from an email link or an earlier step. */
 export const TokenSchema = z.string().regex(/^[A-Za-z0-9_-]{20,128}$/, "expected a token");

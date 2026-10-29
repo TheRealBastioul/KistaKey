@@ -1,46 +1,46 @@
-# Commands to run (Phases 1–2 verification)
+# Commands to run (Phases 10–12 verification)
 
-Phase 1 (crypto core & API contract) and Phase 2 (auth API) are built but
-nothing has been run yet. Run from the repo root on your machine, in
-order. Tick each box as it passes. If a step fails, save its output to
-`ref/error.md` and tell Claude:
+Phases 10 (realtime sync), 11 (password health + generator page) and 12
+(import & export) were built in one session. No migration. New web
+dependencies (`@zxcvbn-ts/core`, `@zxcvbn-ts/language-common`,
+`@zxcvbn-ts/language-en`, `fflate`), so start with `pnpm install`. Run
+from the repo root, in order, and tick each box as it passes. If a step
+fails, save its output and tell Claude:
 
 ```
 <command> > ref\error.md 2>&1
 ```
 
-## Setup
+## Checks
 
-- [X] `pnpm install` (new deps: libsodium, @fastify/cookie, @fastify/rate-limit, @simplewebauthn, nodemailer, qrcode)
-  - If it complains about build scripts, tell Claude which package.
-- [X] `node --version` shows **24.7 or newer** (the API uses Node's built-in Argon2id)
-- [X] `pnpm services:down` then `pnpm services:up` (adds Mailpit: inbox at http://localhost:8025)
-- [X] `apps/api/.env` has `APP_ORIGIN`, `SERVER_ENCRYPTION_KEY`, `SERVER_HMAC_KEY`, `MAIL_*`, `TEST_REDIS_URL` (already added for you; compare with `.env.example`)
-- [X] `pnpm db:migrate --name accounts_auth` creates and applies the Phase 2 migration
-  - Then run `pnpm db:migrate` again: it must say the schema is in sync (no new migration).
+**Verified by the user 2026-10-28.** Phase 13 replaces this list.
 
-## Phase 1: crypto + types
+- [x] `pnpm install` (adds zxcvbn-ts + fflate to `apps/web`)
+- [x] `pnpm typecheck`
+- [x] `pnpm lint`
+- [x] `pnpm test` (new: `realtime.hub.test.ts`, `integration/realtime.test.ts`, `/vault/exported` case in `integration/vault.test.ts`, `crypto/vaultExport.test.ts`, web `live.test.ts`, `health.test.ts`, `import/import.test.ts`)
+- [x] `pnpm services:up`, then `pnpm dev`; open http://127.0.0.1:5173 and log in
 
-- [X] `pnpm --filter @repo/crypto test` (known-answer vectors, tamper tests, account flows)
-- [X] `pnpm --filter @repo/types test`
-- [X] `pnpm --filter @repo/crypto typecheck`
-- [X] `pnpm --filter @repo/types typecheck`
+### Phase 10: realtime
 
-## Phase 2: auth API
+- [x] Log in to the same account in a second window (private window / other browser), open `/vault` in both: the sidebar shows **Live**
+- [x] Create, edit, trash and delete an item in one window → the other updates within a second or two, no refresh
+- [x] Stop the API (Ctrl+C in `pnpm dev`) → **Reconnecting…**; restart it → **Live** again within a minute, and changes made meanwhile show up
+- [x] Settings → Security → revoke the other window's session → that window is signed out within ~25 s
 
-- [X] `pnpm db:generate` (regenerates the Prisma client for the Phase 2 models; `--filter` runs skip Turbo, which normally does this, and Prisma 7's `migrate dev` no longer does it either)
-- [X] `pnpm --filter @repo/api typecheck`
-- [X] `pnpm --filter @repo/api test` (unit + integration; integration needs Postgres + Redis running)
-  - The integration suite must not show "skipped": `TEST_DATABASE_URL` and `TEST_REDIS_URL` must be set.
-- [X] `pnpm --filter @repo/api build`
-- [X] `pnpm --filter @repo/api dev`: starts without errors and logs that it's listening (legal documents seeded). Stop with Ctrl+C.
-- [X] `pnpm --filter @repo/api dev:worker`: logs `worker started` with queues `maintenance`, `email`. Stop with Ctrl+C.
+### Phase 11: health & generator
 
-## Checks (same as CI)
+- [x] Two logins with the same password and one with `password1` → the dashboard's **Password health** shows Reused 2 and Weak ≥ 1; clicking each count lists just those items
+- [x] Change one of the reused passwords → Reused drops to 0
+- [x] **Generator** (main nav): switch Password / Passphrase, move the sliders, toggle options → the preview updates; **Copy** → it's listed under "Copied this session"; Lock now and unlock → the list is empty
 
-- [X] `pnpm lint`
-- [ ] Commit, push, and check the GitHub Actions run is green (CI now starts a Redis service too)
+### Phase 12: import & export
+
+- [x] Settings → **Import & export** → Bitwarden (.json) → pick an unencrypted Bitwarden export → preview counts → **Import** → progress bar → items and folders show in the vault
+- [x] **Download encrypted backup** → import that file as "Encrypted backup" → same item count (duplicates expected)
+- [x] **Export as CSV…**: button disabled until the box is ticked and a password entered; a wrong password is rejected; the right one downloads the CSV → import it as "Bitwarden (.csv)" → names, usernames, passwords, sites, notes, folders and TOTP codes match
+- [x] Delete the test duplicates
 
 ## After everything passes
 
-- [ ] Tell Claude "phases 1 and 2 verified"
+- [x] Tell Claude "phases 10–12 verified"

@@ -32,11 +32,13 @@ const modules = createModules({
     hmacKey: env.SERVER_HMAC_KEY,
   }),
   email: createQueueEmailSender(emailQueue),
+  logger: log,
 });
 
 const { handlers, schedules } = createJobScheduleAndHandlers({
   audit: modules.audit,
   auth: modules.auth,
+  vault: modules.vault,
   deliverEmail: createSmtpDelivery({
     host: env.MAIL_HOST,
     port: env.MAIL_PORT,

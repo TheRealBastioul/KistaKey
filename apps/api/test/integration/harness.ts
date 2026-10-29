@@ -15,6 +15,7 @@ import { PrismaClient } from "../../src/generated/prisma/client";
 import { base32Decode, hotp, totpStep } from "../../src/lib/totp";
 import { type AppModules, createModules } from "../../src/modules";
 import type { EmailMessage } from "../../src/modules/email";
+import type { StreamSettings } from "../../src/modules/realtime";
 
 export const dbUrl = process.env.TEST_DATABASE_URL;
 export const redisUrl = process.env.TEST_REDIS_URL;
@@ -34,10 +35,20 @@ export interface Harness {
   prisma: PrismaClient;
   redis: Redis;
   emails: EmailMessage[];
+  /**
+   * Another API instance: its own modules, Redis connection and app, the
+   * same database, Redis and keys (so sessions work on both). Closed with
+   * the harness.
+   */
+  addInstance(): Promise<{ app: FastifyInstance; modules: AppModules }>;
   close(): Promise<void>;
 }
 
-export async function createHarness(): Promise<Harness> {
+export interface HarnessOptions {
+  streams?: Partial<StreamSettings>;
+}
+
+export async function createHarness(options: HarnessOptions = {}): Promise<Harness> {
   await crypto.ready();
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: dbUrl ?? "" }) });
   const redis = new Redis(redisUrl ?? "");
@@ -45,23 +56,29 @@ export async function createHarness(): Promise<Harness> {
   await redis.flushdb();
 
   const emails: EmailMessage[] = [];
-  const modules = createModules({
-    db: { writer: prisma, reader: prisma },
-    redis,
-    config: createSecurityConfig({
-      appOrigin: "http://localhost:5173",
-      encryptionKey: randomBytes(32),
-      hmacKey: randomBytes(32),
-      secretHash: { memoryKiB: 64, passes: 2, parallelism: 1 },
-    }),
-    email: {
-      async send(message) {
-        emails.push(message);
-      },
-    },
+  const config = createSecurityConfig({
+    appOrigin: "http://localhost:5173",
+    encryptionKey: randomBytes(32),
+    hmacKey: randomBytes(32),
+    secretHash: { memoryKiB: 64, passes: 2, parallelism: 1 },
   });
+  const build = (instanceRedis: Redis) =>
+    createModules({
+      db: { writer: prisma, reader: prisma },
+      redis: instanceRedis,
+      config,
+      email: {
+        async send(message) {
+          emails.push(message);
+        },
+      },
+      ...(options.streams ? { streams: options.streams } : {}),
+    });
+  const modules = build(redis);
   await modules.legal.seed(LEGAL_DOCUMENTS);
   const app = await buildApp({ healthChecks: {}, modules });
+
+  const extra: { app: FastifyInstance; modules: AppModules; redis: Redis }[] = [];
 
   return {
     app,
@@ -69,9 +86,19 @@ export async function createHarness(): Promise<Harness> {
     prisma,
     redis,
     emails,
+    async addInstance() {
+      const instanceRedis = new Redis(redisUrl ?? "");
+      const instanceModules = build(instanceRedis);
+      const instanceApp = await buildApp({ healthChecks: {}, modules: instanceModules });
+      extra.push({ app: instanceApp, modules: instanceModules, redis: instanceRedis });
+      return { app: instanceApp, modules: instanceModules };
+    },
     async close() {
-      await app.close();
-      redis.disconnect();
+      for (const instance of [{ app, modules, redis }, ...extra]) {
+        await instance.app.close();
+        instance.modules.realtime.close();
+        instance.redis.disconnect();
+      }
       await prisma.$disconnect();
     },
   };
@@ -108,8 +135,13 @@ export class Client {
     return this.cookies.get(name);
   }
 
+  /** The Cookie header this browser would send (for real HTTP requests, e.g. SSE). */
+  cookieHeader(): string {
+    return [...this.cookies].map(([k, v]) => `${k}=${v}`).join("; ");
+  }
+
   async request(
-    method: "GET" | "POST" | "DELETE",
+    method: "GET" | "POST" | "PUT" | "DELETE",
     url: string,
     body?: unknown,
     opts: { csrf?: boolean } = {},
